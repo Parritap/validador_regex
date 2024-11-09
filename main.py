@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from dataclasses import dataclass
 from typing import Optional, Set
 import string
@@ -6,9 +8,6 @@ import string
 @dataclass
 class Nodo:
     """Nodo representa un estado de un automata."""
-    # Es de tipo Optional dado que el valor None equivale a un epsilon.}
-    # La etiqueta representa la transación que se debe realizar para llegar a este nodo, es por esto que
-    # vemos que cada nodo contiene una sola etiqueta o peso.
     etiqueta: Optional[str] = None
     # Según este articulo -> https://en.wikipedia.org/wiki/Thompson%27s_construction#:~:text=In%20computer%20science%2C%20Thompson
     # Podemos representar un automata no determinasta mediante más automatas no deterministas de manera recursiva.
@@ -44,11 +43,11 @@ class MotorRegex:
     """
     El siguiente es un diccionario que contiene los operadores con su respectivo nivel de precedencia.
     El nivel de precedencia es simplemente el nivel de jerarquia que tiene un operador sobre otro.
-    
+
     Haciendo un ejemplo en un contexto más conocido: En el algebra el operador de multiplicación tiene mayor
     precedencia que el operador de suma, esto quiere decir que en la siguiente expresion : A + B * C
     Primero se realizará la multiplicación y luego la suma.
-    
+
     En las expresiones regulares ocurre lo mismo.
     """
 
@@ -60,16 +59,15 @@ class MotorRegex:
             '|': 1  # Alternation
         }
 
-
-
-
     def infix_a_postfix(self, infix: str) -> str:
         """Convierte una expresion regular en notacion infix a postfix (notación polaca inversa).
         La notación infix es la que todos conocemos y usamos en clase.
         Esto es importante porque la notacion postfix resulta más facilmente procesable por una computadora,
         y a la larga, hace menos complejos los algoritmos de analisis de expresiones.
 
-        Ejemplo -> a.(b|d).c*  ------> abd|.c*.
+        Ejemplo:
+        intput: a.(b|d).c*
+        output: abd|.c*.
 
         https://en.wikipedia.org/wiki/Reverse_Polish_notation#:~:text=9%20External%20links-,Explanation,5%20is%20added%20to%20it.
 
@@ -99,10 +97,10 @@ class MotorRegex:
             postfix.append(pila.pop())
 
         resultado = ''.join(postfix)
-        print(f"La expresion regular en notacion postfix es: {resultado}")
         return resultado
 
     def compilar(self, postfix: str) -> Automata:
+        print(f"La expresion regular en notacion postfix es: {postfix}")
         """Se encarga de contruir un automata no determinista con base a la expresion postfix
         Este algoritmo se ve complejo pero basta con dibujar el proceso que sigue para ver
         que simplemente crea, arma y desarma autoamatas, conectando unos con otros de cierta manera dependiendo del
@@ -117,40 +115,82 @@ class MotorRegex:
             if char in self.operadores:
                 if char == '*':
                     auto1 = auto_stack.pop()
-                    inicial, aceptacion = Nodo(), Nodo()
-                    inicial.arista1 = auto1.inicial
-                    inicial.arista2 = aceptacion
+                    init, final = Nodo(), Nodo()
+                    init.arista1 = auto1.inicial
+                    init.arista2 = final
                     auto1.aceptacion.arista1 = auto1.inicial
-                    auto1.aceptacion.arista2 = aceptacion
-                    auto_stack.append(Automata(inicial, aceptacion))
+                    auto1.aceptacion.arista2 = final
+                    auto_stack.append(Automata(init, final))
                 elif char == '.':
                     auto2, auto1 = auto_stack.pop(), auto_stack.pop()
                     auto1.aceptacion.arista1 = auto2.inicial
                     auto_stack.append(Automata(auto1.inicial, auto2.aceptacion))
                 elif char == '|':
                     auto2, auto1 = auto_stack.pop(), auto_stack.pop()
-                    inicial = Nodo(arista1=auto1.inicial, arista2=auto2.inicial)
-                    aceptacion = Nodo()
-                    auto1.aceptacion.arista1 = aceptacion
-                    auto2.aceptacion.arista1 = aceptacion
-                    auto_stack.append(Automata(inicial, aceptacion))
+                    init = Nodo(arista1=auto1.inicial, arista2=auto2.inicial)
+                    final = Nodo()
+                    auto1.aceptacion.arista1 = final
+                    auto2.aceptacion.arista1 = final
+                    auto_stack.append(Automata(init, final))
                 elif char == '+':
                     auto1 = auto_stack.pop()
-                    inicial, aceptacion = Nodo(), Nodo()
-                    inicial.arista1 = auto1.inicial
+                    init, final = Nodo(), Nodo()
+                    init.arista1 = auto1.inicial
                     auto1.aceptacion.arista1 = auto1.inicial
-                    auto1.aceptacion.arista2 = aceptacion
-                    auto_stack.append(Automata(inicial, aceptacion))
-                elif char == '?':
-                    auto1 = auto_stack.pop()
-                    inicial, aceptacion = Nodo(), Nodo()
-                    inicial.arista1 = auto1.inicial
-                    inicial.arista2 = aceptacion
-                    auto1.aceptacion.arista1 = aceptacion
-                    auto_stack.append(Automata(inicial, aceptacion))
-            else:
-                aceptacion = Nodo()
-                inicial = Nodo(etiqueta=char, arista1=aceptacion)
-                auto_stack.append(Automata(inicial, aceptacion))
+                    auto1.aceptacion.arista2 = final
+                    auto_stack.append(Automata(init, final))
+            else:  # es un caracter
+                final = Nodo()
+                init = Nodo(etiqueta=char, arista1=final)
+                auto_stack.append(Automata(init, final))
 
         return auto_stack.pop()
+
+    def seguir_epsilons(self, current_state: Nodo) -> Set[Nodo]:
+        """Obtiene todos los nodos no-epsilon alcanzables siguiendo un camino de nodos epsilon."""
+        states = set()
+        states.add(current_state)
+
+        if current_state.etiqueta is None:
+            if current_state.arista1:
+                states |= self.seguir_epsilons(current_state.arista1)
+            if current_state.arista2:
+                states |= self.seguir_epsilons(current_state.arista2)
+
+        return states
+
+    def verificar_str(self, regex: str, texto: str) -> bool:
+        """Con base al regex especificado crea un automata y con base al automata valida el texto."""
+        postfix: string = self.infix_a_postfix(regex)
+        automata = self.compilar(postfix)
+
+        current: set = self.seguir_epsilons(automata.inicial)
+
+        for char in texto:
+            next_states = set()
+            for state in current:
+                if state.etiqueta == char:
+                    next_states |= self.seguir_epsilons(state.arista1)
+            current = next_states
+
+        return automata.aceptacion in current
+
+
+def main():
+    """Ejemplo de uso de la clase MotorRegex."""
+    motor = MotorRegex()
+
+    while True:
+        try:
+            user_input = input("Ingrese el regex (o 'salir' o 'q' para salir): ")
+            if user_input.lower() in ('salir', 'q'):
+                break
+            texto = input("Ingrese el texto a validar: ")
+            result = motor.verificar_str(user_input, texto)
+            print(f"\nResultado del match: {result}\n")
+        except KeyboardInterrupt:
+            break
+
+
+if __name__ == "__main__":
+    main()
