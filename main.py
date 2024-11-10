@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+import re
 from dataclasses import dataclass
 from typing import Optional, Set
 import string
@@ -10,7 +10,7 @@ class Nodo:
     """Nodo representa un estado de un automata."""
     etiqueta: Optional[str] = None
     # Según este articulo -> https://en.wikipedia.org/wiki/Thompson%27s_construction#:~:text=In%20computer%20science%2C%20Thompson
-    # Podemos representar un automata no determinasta mediante más automatas no deterministas de manera recursiva.
+    # Podemos representar un automata no determinista mediante más automatas no deterministas de manera recursiva.
     # Para ello lo unico que necesitamos es que cada nodo contenga máximo dos aristas.
     arista1: Optional['Nodo'] = None
     arista2: Optional['Nodo'] = None
@@ -58,6 +58,7 @@ class MotorRegex:
             '.': 2,  # Concatenation
             '|': 1  # Alternation
         }
+        self.postfix = None  # Inicializamos la variable de clase
 
     def infix_a_postfix(self, infix: str) -> str:
         """Convierte una expresion regular en notacion infix a postfix (notación polaca inversa).
@@ -160,25 +161,66 @@ class MotorRegex:
         return states
 
     def verificar_str(self, regex: str, texto: str) -> bool:
-        """Con base al regex especificado crea un automata y con base al automata valida el texto."""
-        postfix: string = self.infix_a_postfix(regex)
-        automata = self.compilar(postfix)
+        if self.verificar_validez_regex(regex):
+            """Con base al regex especificado crea un automata y con base al autómata valida el texto."""
+            self.postfix: string = self.infix_a_postfix(regex)
+            automata = self.compilar(self.postfix)
 
-        current: set = self.seguir_epsilons(automata.inicial)
+            current: set = self.seguir_epsilons(automata.inicial)
 
-        for char in texto:
-            next_states = set()
-            for state in current:
-                if state.etiqueta == char:
-                    next_states |= self.seguir_epsilons(state.arista1)
-            current = next_states
+            for char in texto:
+                next_states = set()
+                for state in current:
+                    if state.etiqueta == char:
+                        next_states |= self.seguir_epsilons(state.arista1)
+                current = next_states
 
-        return automata.aceptacion in current
+            return automata.aceptacion in current
+        else:
+            return None
+
+    def verificar_validez_regex(self, regex: str) -> bool:
+        # Patrón para caracteres alfanuméricos o símbolos permitidos
+        patron_caracteres = r"^[a-zA-Z0-9+\|\(\)\.\*]+$"
+
+        # Patrones para verificar secuencias no permitidas
+        patron_dos_simbolos = r"[+\|\.\*]{2,}"
+        patron_simbolo_al_inicio = r"^[+\|\.\*]"
+        patron_simbolo_sin_alfanumerico_derecha = r"[+\*][^a-zA-Z0-9\)]"
+        patron_simbolo_sin_alfanumerico_ambos_lados = r"[\|\.][^a-zA-Z0-9()\.]|[^a-zA-Z0-9()\.][\|\.]"
+
+        # Verificar si la expresión contiene al menos un caracter alfanumérico o símbolo permitido
+        if not re.search(patron_caracteres, regex):
+            print("1 NO VALIDA")
+            return False
+
+        # Verificar si la expresión comienza con un caracter alfanumérico
+        if re.match(patron_simbolo_al_inicio, regex):
+            print("2 NO VALIDA")
+            return False
+
+        # Verificar si hay dos o más símbolos consecutivos
+        if re.search(patron_dos_simbolos, regex):
+            print("3 NO VALIDA")
+            return False
+
+        # Verificar si hay símbolos "+" o "*" sin un caracter alfanumérico o ")" a la izquierda
+        if re.search(patron_simbolo_sin_alfanumerico_derecha, regex):
+            print("4 NO VALIDA")
+            return False
+
+        # Verificar si hay símbolos "." o "|" sin un caracter alfanumérico o ")" a ambos lados
+        if re.search(patron_simbolo_sin_alfanumerico_ambos_lados, regex):
+            print("5 NO VALIDA")
+            return False
+
+        return True
 
 
 def main():
     """Ejemplo de uso de la clase MotorRegex."""
     motor = MotorRegex()
+
 
     while True:
         try:
@@ -187,7 +229,12 @@ def main():
                 break
             texto = input("Ingrese el texto a validar: ")
             result = motor.verificar_str(user_input, texto)
-            print(f"\nResultado del match: {result}\n")
+
+            if result is None:
+                print("ERROR")
+            else:
+                print(f"\nResultado del match: {result}\n")
+
         except KeyboardInterrupt:
             break
 
