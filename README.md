@@ -1,22 +1,22 @@
 # Motor de Expresiones Regulares basado en la Construcción de Thompson
-Grupo: [Juan Esteban Parra Parra, Juan Esteban Castaño Osma, Juan Alejandro Gallego ]
+Grupo: **[Juan Esteban Parra Parra, Juan Esteban Castaño Osma, Juan Alejandro Gallego ]**
 
 Este proyecto implementa un motor de expresiones regulares que utiliza la construcción de 
 Thompson para convertir expresiones regulares en autómatas no deterministas finitos (NFA por sus siglas en Inglés).
 Una vez convertida la expresión en notación postfix, se construye el NFA, se puede utilizar para verificar si una cadena
 dada coincide con la expresión regular.
 
-## Instalación
+### Instalación
 
 No se requiere instalación específica.  Asegúrese de tener Python 3 instalado.
 
-## Caracteristicas Principales
+### Caracteristicas Principales
 - **Conversión de expresiones regulares:** Soporta operadores comunes como concatenación, unión, cerradura de Kleene y uno o más.
 - **Construcción de autómatas:** Utiliza el algoritmo de Thompson para construir el NFA correspondiente a la expresión regular.
 - **Simulación de autómatas:** Simula la ejecución del autómata sobre una cadena de entrada para determinar si es aceptada.
 - **Validación de expresiones regulares:** Verifica la sintaxis de la expresión regular antes de procesarla.
 
-## Componentes Principales
+### Componentes Principales
 - **Nodo:** Representa un estado en un autómata.
 - **Automata:** Representa un autómata no determinista que tiene un estado inicial y un estado de aceptación.
 - **MotorRegex:** Implementa la lógica para convertir una expresión regular en un autómata no determinista y verificar la validez de una cadena.
