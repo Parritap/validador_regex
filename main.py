@@ -3,6 +3,7 @@ import re
 from dataclasses import dataclass
 from typing import Optional, Set
 import string
+import graficador
 from mermaid.graph import Graph
 import mermaid as md
 
@@ -47,7 +48,7 @@ class Renderex:
         self.letters.update({letter: 0 for letter in string.ascii_lowercase})
 
     def get_symbolx(self, c: str) -> str:
-        """ Logica necesaria dada la manera en cómo funciona Mermaid"""
+        """ Logica necesaria dada la manera en como funciona Mermaid"""
         reps = self.letters[c]
         self.letters[c] += 1
         return c + '\0' * reps
@@ -57,7 +58,7 @@ class Renderex:
         return Nodo(symbolx=self.get_symbolx("λ"))
 
     def write(self, instruction : str) -> None:
-        """Escribe una instruccion en el script para el algortimo de Mermaid"""
+        """Escribe una instrucción en el script para el algoritmo de Mermaid"""
         self.script += instruction + "\n"
 
 
@@ -289,6 +290,9 @@ def main():
         except KeyboardInterrupt:
             break
 
+    # Graficamos el automata
+    graficador.graficar(motor.r.script)
+
 
 if __name__ == "__main__":
-    main();
+    main()
