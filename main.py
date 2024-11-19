@@ -4,8 +4,6 @@ from dataclasses import dataclass
 from typing import Optional, Set
 import string
 import graficador
-from mermaid.graph import Graph
-import mermaid as md
 
 
 # Lambda symbol ---> λ
@@ -13,7 +11,7 @@ import mermaid as md
 
 @dataclass
 class Nodo:
-    symbolx: str  # Char que se va a renderizar. No debe ser usado como etiqueta.
+    symbolx: str = None # Char que se va a renderizar. No debe ser usado como etiqueta.
 
     """Nodo representa un estado de un automata."""
     etiqueta: Optional[str] = None
@@ -62,7 +60,7 @@ class Renderex:
 
     def write(self, instruction: str) -> None:
         """Escribe una instrucción en el script para el algoritmo de Mermaid"""
-        self.script += instruction + "\n"
+        self.script += '\t' + instruction + "\n"
 
 
 @dataclass
@@ -91,6 +89,7 @@ class MotorRegex:
     """
 
     def __init__(self):
+        self.automata = None
         self.operadores = {
             "*": 3,  # Kleene star
             "+": 3,  # One or more
@@ -188,7 +187,24 @@ class MotorRegex:
                 init = Nodo(etiqueta=char, arista1=final)
                 auto_stack.append(Automata(init, final))
 
-        return auto_stack.pop()
+
+        result = auto_stack.pop()
+        self.automata = result
+        return result
+
+
+    def fill_symbols (self, nodo : Nodo) -> str :
+        if (nodo.symbolx == None) :
+            if (nodo.etiqueta == None) :
+                nodo.symbolx = self.r.get_symbolx("λ")
+            else: nodo.symbolx = self.r.get_symbolx(nodo.etiqueta)
+
+        if (nodo.arista1 != None) :
+            self.r.write(f"{nodo.symbolx} --> {self.fill_symbols(nodo.arista1)}")
+        if (nodo.arista2 != None) :
+            self.r.write(f"{nodo.symbolx} --> {self.fill_symbols(nodo.arista2)}")
+
+        return nodo.symbolx
 
     def seguir_epsilons(self, current_state: Nodo) -> Set[Nodo]:
         """Obtiene todos los nodos no-epsilon alcanzables siguiendo un camino de nodos epsilon."""
@@ -209,7 +225,7 @@ class MotorRegex:
             self.postfix: string = self.infix_a_postfix(regex)
             automata = self.compilar(self.postfix)
 
-            current: set = self.seguir_epsilons(automata.inicial)
+            current : set = self.seguir_epsilons(automata.inicial)
 
             for char in texto:
                 next_states = set()
@@ -272,18 +288,22 @@ def main():
             if user_input.lower() in ("salir", "q"):
                 break
             texto = input("Ingrese el texto a validar: ")
-            result = motor.verificar_str(user_input, texto)
+            matches = motor.verificar_str(user_input, texto)
 
-            if result is None:
+            if matches is None:
                 print("ERROR")
             else:
-                print(f"\nResultado del match: {result}\n")
+                print(f"\nResultado del match: {matches}\n")
+
+            #Procesamos cada nodo para obtener la lista de instrucciones de Mermaid
+            motor.fill_symbols(motor.automata.inicial)
+            # Graficamos el automata
+            graficador.graficar(motor.r.script)
+
 
         except KeyboardInterrupt:
             break
 
-    # Graficamos el automata
-    graficador.graficar(motor.r.script)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,8 @@ import mermaid as md
 import os
 
 def graficar(graph_instructions : str):
+
+    print("Las instrucciones son ---->: \n" + graph_instructions)
     """ Grafica el grafo y lo guarda en la carpeta resources del proyecto"""
     print("ASEGURESE DE TENER CONEXION A INTERNET")
     print("Renderizando grafo")
