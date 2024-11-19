@@ -3,10 +3,17 @@ import re
 from dataclasses import dataclass
 from typing import Optional, Set
 import string
+from mermaid.graph import Graph
+import mermaid as md
+
+
+# Lambda symbol ---> λ
 
 
 @dataclass
 class Nodo:
+    symbolx: str  # Char que se va a renderizar. No debe ser usado como etiqueta.
+
     """Nodo representa un estado de un automata."""
     etiqueta: Optional[str] = None
     # Según este articulo -> https://en.wikipedia.org/wiki/Thompson%27s_construction#:~:text=In%20computer%20science%2C%20Thompson
@@ -25,6 +32,34 @@ class Nodo:
             return NotImplemented
         return (self.etiqueta, id(self.arista1), id(self.arista2)) == (
             other.etiqueta, id(other.arista1), id(other.arista2))
+
+
+class Renderex:
+    """Clase que contiene una logica auxiliar para ayudar a Mermaid a renderizar un diagrama de estados."""
+
+    script: str
+    letters: dict = {}
+
+    def __init__(self):
+        self.script = "stateDiagram-v2\n"
+        self.letters["λ"] = 0
+        # Fill the map with the letters of the alphabets
+        self.letters.update({letter: 0 for letter in string.ascii_lowercase})
+
+    def get_symbolx(self, c: str) -> str:
+        """ Logica necesaria dada la manera en cómo funciona Mermaid"""
+        reps = self.letters[c]
+        self.letters[c] += 1
+        return c + '\0' * reps
+
+    def get_void_node(self) -> Nodo:
+        """ Retorna un nodo vacío con un 'λ' como symbolx. """
+        return Nodo(symbolx=self.get_symbolx("λ"))
+
+    def write(self, instruction : str) -> None:
+        """Escribe una instruccion en el script para el algortimo de Mermaid"""
+        self.script += instruction + "\n"
+
 
 
 @dataclass
@@ -59,6 +94,7 @@ class MotorRegex:
             '|': 1  # Alternation
         }
         self.postfix = None  # Inicializamos la variable de clase
+        self.r = Renderex()  # Renderizador.
 
     def infix_a_postfix(self, infix: str) -> str:
         """Convierte una expresion regular en notacion infix a postfix (notación polaca inversa).
@@ -116,36 +152,52 @@ class MotorRegex:
             if char in self.operadores:
                 if char == '*':
                     auto1 = auto_stack.pop()
-                    init, final = Nodo(), Nodo()
+                    init, final = self.r.get_void_node(), self.r.get_void_node()
                     init.arista1 = auto1.inicial
+                    self.r.write(f"{init.symbolx} --> {auto1.inicial.symbolx}\n")
                     init.arista2 = final
+                    self.r.write(f"{init.symbolx} --> {final.symbolx}\n")
                     auto1.aceptacion.arista1 = auto1.inicial
+                    self.r.write(f"{auto1.aceptacion.symbolx} --> {auto1.inicial.symbolx}\n")
                     auto1.aceptacion.arista2 = final
+                    self.r.write(f"{auto1.aceptacion.symbolx} --> {final.symbolx}\n")
                     auto_stack.append(Automata(init, final))
                 elif char == '.':
                     auto2, auto1 = auto_stack.pop(), auto_stack.pop()
                     auto1.aceptacion.arista1 = auto2.inicial
+                    self.r.write(f"{auto1.aceptacion.symbolx} --> {auto2.inicial.symbolx}\n")
                     auto_stack.append(Automata(auto1.inicial, auto2.aceptacion))
                 elif char == '|':
                     auto2, auto1 = auto_stack.pop(), auto_stack.pop()
-                    init = Nodo(arista1=auto1.inicial, arista2=auto2.inicial)
-                    final = Nodo()
+                    init = Nodo(arista1=auto1.inicial,
+                                arista2=auto2.inicial,
+                                symbolx=self.r.get_symbolx("λ"))
+                    final = self.r.get_void_node()
                     auto1.aceptacion.arista1 = final
+                    self.r.write(f"{auto1.aceptacion.symbolx} --> {final.symbolx}\n")
                     auto2.aceptacion.arista1 = final
+                    self.r.write(f"{auto2.aceptacion.symbolx} --> {final.symbolx}\n")
                     auto_stack.append(Automata(init, final))
                 elif char == '+':
                     auto1 = auto_stack.pop()
-                    init, final = Nodo(), Nodo()
+                    init, final = self.r.get_void_node(), self.r.get_void_node()
                     init.arista1 = auto1.inicial
+                    self.r.write(f"{init.symbolx} --> {auto1.inicial.symbolx}\n")
                     auto1.aceptacion.arista1 = auto1.inicial
+                    self.r.write(f"{auto1.aceptacion.symbolx} --> {auto1.inicial.symbolx}\n")
                     auto1.aceptacion.arista2 = final
+                    self.r.write(f"{auto1.aceptacion.symbolx} --> {final.symbolx}\n")
                     auto_stack.append(Automata(init, final))
             else:  # es un caracter
-                final = Nodo()
-                init = Nodo(etiqueta=char, arista1=final)
+                final = self.r.get_void_node()
+                init = Nodo(etiqueta=char,
+                            arista1=final,
+                            symbolx=self.r.get_symbolx(char))
                 auto_stack.append(Automata(init, final))
-
-        return auto_stack.pop()
+        last_auto = auto_stack.pop()
+        last_auto.inicial.symbolx = "[*}"
+        last_auto.aceptacion.symbolx = "[*]"
+        return last_auto
 
     def seguir_epsilons(self, current_state: Nodo) -> Set[Nodo]:
         """Obtiene todos los nodos no-epsilon alcanzables siguiendo un camino de nodos epsilon."""
@@ -221,7 +273,6 @@ def main():
     """Ejemplo de uso de la clase MotorRegex."""
     motor = MotorRegex()
 
-
     while True:
         try:
             user_input = input("Ingrese el regex (o 'salir' o 'q' para salir): ")
@@ -240,4 +291,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main();
