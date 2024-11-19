@@ -6,6 +6,9 @@ Thompson para convertir expresiones regulares en autómatas no deterministas fin
 Una vez convertida la expresión en notación postfix, se construye el NFA, se puede utilizar para verificar si una cadena
 dada coincide con la expresión regular.
 
+# Información Básica
+
+
 ### Instalación
 
 No se requiere instalación específica.  Asegúrese de tener Python 3 instalado.
@@ -84,15 +87,15 @@ a otros estados y es necesario determinar todos aquellos que pueden ser alcanzad
   el actual que se pide como parametro, a partir del cual se va a iterar verificando que la transición tenga un carácter asignado hasta la _**arista1**_ o _**arista2**_
 y al llegar a estas, se agregarán estos nodos vacíos alcanzables de manera recursiva.
     - **Parámetros:**
-      - _**[Nodo] current_state:**_ Cualquier nodo en él autómata, a partir del cual se comienza la búsqueda de transiciones epsilon.
+      - _**[Nodo] current_state:**_ Cualquier nodo en el autómata, a partir del cual se comienza la búsqueda de transiciones epsilon.
     - **Retorno:** Un conjunto de nodos que son alcanzables desde el _**current_state**_ mediante transiciones epsilon.
     
 
   - _**verificar_str(self, regex: str, texto: str):**_ Esta función verifica si una cadena de texto dada es aceptada por un autómata construido a partir de la expresión regular dada.
-La verificación se hace a partir de la simulación de la cadena en él autómata ya previamente construido. Si el autómata llega a un estado de aceptación al final de la cadena, 
+La verificación se hace a partir de la simulación de la cadena en el autómata ya previamente construido. Si el autómata llega a un estado de aceptación al final de la cadena, 
     - la función devuelve _**True**_, indicando que el texto es aceptado por la expresión regular. Si no, devuelve _**False.**_
       - **Funcionamiento:** Antes de verificar el string, esta función llama a las demás explicadas en este documento para verificar la
-validez de la expresión regular, convertir la expresión a **postfix**, construir él autómata y evaluar los estados a los que puede llegar
+validez de la expresión regular, convertir la expresión a **postfix**, construir el autómata y evaluar los estados a los que puede llegar
 con transiciones vacías. 
     
       &emsp; Una vez realizado esto se recorre cada carácter del texto y por cada uno de estos se crea un conjunto de estados siguientes,
@@ -108,17 +111,17 @@ Para que la cadena sea válida al procesar el último carácter se debe de llega
 de reglas estructurales en el contexto de este motor. Verificando caracteres, ubicaciones o secuencias no permitidas.
     - **Funcionamiento:**
       - Verifica caracteres no permitidos a partir de la expresión regular `^[a-zA-Z0-9+\|\(\)\.\*]+$` permitiendo solo 
-letras mayúsculas , minúsculas, números, paréntesis y los operadores permitidos.
+letras mayúsculas, minúsculas, números, paréntesis y los operadores permitidos.
       - Verifica que no se comience con un operador a partir de la expresión regular `^[+\|\.\*]`.
       - Verifica que no estén dos operadores consecutivos a partir de la expresión regular `[+\|\.\*]{2,}`.
-      - Verifica que los operadores _+_ y _\*_  no los suceda un carácter no valido a partir de la expresión regular `[+\*][^a-zA-Z0-9\)]`.
+      - Verifica que los operadores _+_ y _\*_ no los suceda un carácter no válido a partir de la expresión regular `[+\*][^a-zA-Z0-9\)]`.
       - Verifica que los operadores _|_ y _._ no estén rodeados incorrectamente a partir de la expresión regular `[\|\.][^a-zA-Z0-9()\.]|[^a-zA-Z0-9()\.][\|\.]`.
     - **Parámetros:**
       - _**[String] regex:**_ La expresión regular que se desea validar.
     - **Retorno:** Un booleano, _**True**_ si se pasan todas las validaciones o _**False**_ en caso de que al menos una no pueda pasar.
 
 ## Ejemplo de uso [Consola]
-Este proyecto cuenta con interfaz grafica, sin embargo por términos de practicidad, se mostrará el ejemplo de su funcionamiento en consola
+Este proyecto cuenta con interfaz gráfica, sin embargo, por términos de practicidad, se mostrará el ejemplo de su funcionamiento en consola,
 puesto que la forma de interactuar con el programa es prácticamente la misma en ambos casos. 
 ```
 Ingrese el regex (o 'salir' o 'q' para salir): a.(b|d).c*
