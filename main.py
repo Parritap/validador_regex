@@ -20,8 +20,8 @@ class Nodo:
     # Según este articulo -> https://en.wikipedia.org/wiki/Thompson%27s_construction#:~:text=In%20computer%20science%2C%20Thompson
     # Podemos representar un automata no determinista mediante más automatas no deterministas de manera recursiva.
     # Para ello lo unico que necesitamos es que cada nodo contenga máximo dos aristas.
-    arista1: Optional['Nodo'] = None
-    arista2: Optional['Nodo'] = None
+    arista1: Optional["Nodo"] = None
+    arista2: Optional["Nodo"] = None
 
     # Métodos necesarios para poder hashear y comparar nodos.
     # Esto es importante para poder agregar nodos a un set.
@@ -32,7 +32,10 @@ class Nodo:
         if not isinstance(other, Nodo):
             return NotImplemented
         return (self.etiqueta, id(self.arista1), id(self.arista2)) == (
-            other.etiqueta, id(other.arista1), id(other.arista2))
+            other.etiqueta,
+            id(other.arista1),
+            id(other.arista2),
+        )
 
 
 class Renderex:
@@ -48,24 +51,24 @@ class Renderex:
         self.letters.update({letter: 0 for letter in string.ascii_lowercase})
 
     def get_symbolx(self, c: str) -> str:
-        """ Logica necesaria dada la manera en como funciona Mermaid"""
+        """Logica necesaria dada la manera en como funciona Mermaid"""
         reps = self.letters[c]
         self.letters[c] += 1
-        return c + '\0' * reps
+        return c + "\0" * reps
 
     def get_void_node(self) -> Nodo:
-        """ Retorna un nodo vacío con un 'λ' como symbolx. """
+        """Retorna un nodo vacío con un 'λ' como symbolx."""
         return Nodo(symbolx=self.get_symbolx("λ"))
 
-    def write(self, instruction : str) -> None:
+    def write(self, instruction: str) -> None:
         """Escribe una instrucción en el script para el algoritmo de Mermaid"""
         self.script += instruction + "\n"
 
 
-
 @dataclass
 class Automata:
-    """ Automata representa un automata no determinista."""
+    """Automata representa un automata no determinista."""
+
     inicial: Nodo
     aceptacion: Nodo
 
@@ -89,10 +92,10 @@ class MotorRegex:
 
     def __init__(self):
         self.operadores = {
-            '*': 3,  # Kleene star
-            '+': 3,  # One or more
-            '.': 2,  # Concatenation
-            '|': 1  # Alternation
+            "*": 3,  # Kleene star
+            "+": 3,  # One or more
+            ".": 2,  # Concatenation
+            "|": 1,  # Alternation
         }
         self.postfix = None  # Inicializamos la variable de clase
         self.r = Renderex()  # Renderizador.
@@ -114,16 +117,19 @@ class MotorRegex:
         pila = []
 
         for char in infix:
-            if char == '(':
+            if char == "(":
                 pila.append(char)
-            elif char == ')':
-                while pila and pila[-1] != '(':
+            elif char == ")":
+                while pila and pila[-1] != "(":
                     postfix.append(pila.pop())
                 if pila:  # Elimina el caracter de agrupacion -> '('
                     pila.pop()
             elif char in self.operadores:
-                while (pila and pila[-1] != '(' and
-                       self.operadores.get(char, 0) <= self.operadores.get(pila[-1], 0)):
+                while (
+                    pila
+                    and pila[-1] != "("
+                    and self.operadores.get(char, 0) <= self.operadores.get(pila[-1], 0)
+                ):
                     postfix.append(pila.pop())
                 pila.append(char)
             else:
@@ -134,71 +140,55 @@ class MotorRegex:
         while pila:
             postfix.append(pila.pop())
 
-        resultado = ''.join(postfix)
+        resultado = "".join(postfix)
         return resultado
 
     def compilar(self, postfix: str) -> Automata:
         print(f"La expresion regular en notacion postfix es: {postfix}")
         """Se encarga de contruir un automata no determinista con base a la expresion postfix
-        Este algoritmo se ve complejo pero basta con dibujar el proceso que sigue para ver
-        que simplemente crea, arma y desarma autoamatas, conectando unos con otros de cierta manera dependiendo del
-        operador.
+            Este algoritmo se ve complejo pero basta con dibujar el proceso que sigue para ver
+            que simplemente crea, arma y desarma autoamatas, conectando unos con otros de cierta manera dependiendo del
+            operador.
 
-        Para mayor claridad del algoritmo, ver la siguiente imagen que representa el regex : (ε|a*b)
-        https://en.wikipedia.org/wiki/Thompson%27s_construction#/media/File:Small-thompson-example.svg
-        """
+            Para mayor claridad del algoritmo, ver la siguiente imagen que representa el regex : (ε|a*b)
+            https://en.wikipedia.org/wiki/Thompson%27s_construction#/media/File:Small-thompson-example.svg
+            """
         auto_stack = []  # Pila del automata
 
         for char in postfix:
             if char in self.operadores:
-                if char == '*':
+                if char == "*":
                     auto1 = auto_stack.pop()
-                    init, final = self.r.get_void_node(), self.r.get_void_node()
+                    init, final = Nodo(), Nodo()
                     init.arista1 = auto1.inicial
-                    self.r.write(f"{init.symbolx} --> {auto1.inicial.symbolx}\n")
                     init.arista2 = final
-                    self.r.write(f"{init.symbolx} --> {final.symbolx}\n")
                     auto1.aceptacion.arista1 = auto1.inicial
-                    self.r.write(f"{auto1.aceptacion.symbolx} --> {auto1.inicial.symbolx}\n")
                     auto1.aceptacion.arista2 = final
-                    self.r.write(f"{auto1.aceptacion.symbolx} --> {final.symbolx}\n")
                     auto_stack.append(Automata(init, final))
-                elif char == '.':
+                elif char == ".":
                     auto2, auto1 = auto_stack.pop(), auto_stack.pop()
                     auto1.aceptacion.arista1 = auto2.inicial
-                    self.r.write(f"{auto1.aceptacion.symbolx} --> {auto2.inicial.symbolx}\n")
                     auto_stack.append(Automata(auto1.inicial, auto2.aceptacion))
-                elif char == '|':
+                elif char == "|":
                     auto2, auto1 = auto_stack.pop(), auto_stack.pop()
-                    init = Nodo(arista1=auto1.inicial,
-                                arista2=auto2.inicial,
-                                symbolx=self.r.get_symbolx("λ"))
-                    final = self.r.get_void_node()
+                    init = Nodo(arista1=auto1.inicial, arista2=auto2.inicial)
+                    final = Nodo()
                     auto1.aceptacion.arista1 = final
-                    self.r.write(f"{auto1.aceptacion.symbolx} --> {final.symbolx}\n")
                     auto2.aceptacion.arista1 = final
-                    self.r.write(f"{auto2.aceptacion.symbolx} --> {final.symbolx}\n")
                     auto_stack.append(Automata(init, final))
-                elif char == '+':
+                elif char == "+":
                     auto1 = auto_stack.pop()
-                    init, final = self.r.get_void_node(), self.r.get_void_node()
+                    init, final = Nodo(), Nodo()
                     init.arista1 = auto1.inicial
-                    self.r.write(f"{init.symbolx} --> {auto1.inicial.symbolx}\n")
                     auto1.aceptacion.arista1 = auto1.inicial
-                    self.r.write(f"{auto1.aceptacion.symbolx} --> {auto1.inicial.symbolx}\n")
                     auto1.aceptacion.arista2 = final
-                    self.r.write(f"{auto1.aceptacion.symbolx} --> {final.symbolx}\n")
                     auto_stack.append(Automata(init, final))
             else:  # es un caracter
-                final = self.r.get_void_node()
-                init = Nodo(etiqueta=char,
-                            arista1=final,
-                            symbolx=self.r.get_symbolx(char))
+                final = Nodo()
+                init = Nodo(etiqueta=char, arista1=final)
                 auto_stack.append(Automata(init, final))
-        last_auto = auto_stack.pop()
-        last_auto.inicial.symbolx = "[*}"
-        last_auto.aceptacion.symbolx = "[*]"
-        return last_auto
+
+        return auto_stack.pop()
 
     def seguir_epsilons(self, current_state: Nodo) -> Set[Nodo]:
         """Obtiene todos los nodos no-epsilon alcanzables siguiendo un camino de nodos epsilon."""
@@ -240,7 +230,9 @@ class MotorRegex:
         patron_dos_simbolos = r"[+\|\.\*]{2,}"
         patron_simbolo_al_inicio = r"^[+\|\.\*]"
         patron_simbolo_sin_alfanumerico_derecha = r"[+\*][^a-zA-Z0-9\)]"
-        patron_simbolo_sin_alfanumerico_ambos_lados = r"[\|\.][^a-zA-Z0-9()\.]|[^a-zA-Z0-9()\.][\|\.]"
+        patron_simbolo_sin_alfanumerico_ambos_lados = (
+            r"[\|\.][^a-zA-Z0-9()\.]|[^a-zA-Z0-9()\.][\|\.]"
+        )
 
         # Verificar si la expresión contiene al menos un caracter alfanumérico o símbolo permitido
         if not re.search(patron_caracteres, regex):
@@ -277,7 +269,7 @@ def main():
     while True:
         try:
             user_input = input("Ingrese el regex (o 'salir' o 'q' para salir): ")
-            if user_input.lower() in ('salir', 'q'):
+            if user_input.lower() in ("salir", "q"):
                 break
             texto = input("Ingrese el texto a validar: ")
             result = motor.verificar_str(user_input, texto)
