@@ -8,7 +8,18 @@ dada coincide con la expresión regular.
 
 ### Instalación
 
-No se requiere instalación específica.  Asegúrese de tener Python 3 instalado.
+Usar un entorno virtual de Python "venv"
+```bash
+python -m venv venv
+source venv/bin/activate
+
+#Luego instalamos los paquetes necesarios
+
+pip install mermaid-py
+pip install ipython
+
+```
+
 
 ### Caracteristicas Principales
 - **Conversión de expresiones regulares:** Soporta operadores comunes como concatenación, unión, cerradura de Kleene y uno o más.
