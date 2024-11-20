@@ -9,7 +9,7 @@ dada coincide con la expresión regular.
 # Información Básica
 
 
-### Instalación
+### Instalación de paquetes
 
 Usar un entorno virtual de Python "venv"
 ```bash
@@ -20,8 +20,21 @@ source venv/bin/activate
 
 pip install mermaid-py
 pip install customtkinter
+pip install tk
+
 
 ```
+
+### Adiocionalmente en MacOs
+```bash
+brew install python-tk
+```
+
+### O adicionalmente si tiene Ubuntu
+```bash
+sudo apt install python3-tk
+```
+
 
 
 ### Dependencias
