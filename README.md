@@ -19,7 +19,7 @@ source venv/bin/activate
 #Luego instalamos los paquetes necesarios
 
 pip install mermaid-py
-pip install ipython
+pip install customtkinter
 
 ```
 

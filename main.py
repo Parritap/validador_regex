@@ -188,10 +188,12 @@ class MotorRegex:
                 init = Nodo(etiqueta=char, arista1=final)
                 auto_stack.append(Automata(init, final))
 
-        result = auto_stack.pop()
-        result.inicial.symbolx = "[*]"
-        result.aceptacion.symbolx = "[*]"
-        self.automata = result
+        aux = auto_stack.pop()
+
+        result = Automata(Nodo(symbolx="[*]"), aux.aceptacion)
+        result.aceptacion.arista1 = aux.inicial
+        aux.aceptacion.symbolx = "[*]"
+        self.automata = aux
         return result
 
     def fill_symbols(self, nodo: Nodo, memory: set, connections: set) -> str:
