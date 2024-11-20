@@ -1,4 +1,6 @@
 import customtkinter
+
+import graficador
 import main
 
 customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
@@ -48,6 +50,11 @@ class App(customtkinter.CTk):
 
         result = motor.verificar_str(regex, cadena)
         print(f"\nResultado del match: {result}\n")
+
+        # Procesamos cada nodo para obtener la lista de instrucciones de Mermaid
+        motor.fill_symbols(motor.automata.inicial, set(), set())
+        # Graficamos el automata
+        graficador.graficar(motor.r.script)
 
         # Crear una nueva ventana para mostrar los datos
         self.ventana_datos = customtkinter.CTkToplevel(self)
