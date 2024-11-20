@@ -11,7 +11,7 @@ import graficador
 
 @dataclass
 class Nodo:
-    symbolx: str = None # Char que se va a renderizar. No debe ser usado como etiqueta.
+    symbolx: str = None  # Char que se va a renderizar. No debe ser usado como etiqueta.
 
     """Nodo representa un estado de un automata."""
     etiqueta: Optional[str] = None
@@ -24,7 +24,7 @@ class Nodo:
     # Métodos necesarios para poder hashear y comparar nodos.
     # Esto es importante para poder agregar nodos a un set.
     def __hash__(self):
-        return hash((self.etiqueta, id(self.arista1), id(self.arista2)))
+        return hash((self.etiqueta, id(self.arista1), id(self.arista2), id(self.symbolx)))
 
     def __eq__(self, other):
         if not isinstance(other, Nodo):
@@ -33,6 +33,7 @@ class Nodo:
             other.etiqueta,
             id(other.arista1),
             id(other.arista2),
+            id(other.symbolx),
         )
 
 
@@ -125,9 +126,9 @@ class MotorRegex:
                     pila.pop()
             elif char in self.operadores:
                 while (
-                    pila
-                    and pila[-1] != "("
-                    and self.operadores.get(char, 0) <= self.operadores.get(pila[-1], 0)
+                        pila
+                        and pila[-1] != "("
+                        and self.operadores.get(char, 0) <= self.operadores.get(pila[-1], 0)
                 ):
                     postfix.append(pila.pop())
                 pila.append(char)
@@ -187,22 +188,33 @@ class MotorRegex:
                 init = Nodo(etiqueta=char, arista1=final)
                 auto_stack.append(Automata(init, final))
 
-
         result = auto_stack.pop()
         self.automata = result
         return result
 
+    def fill_symbols(self, nodo: Nodo, memory: set, connections: set) -> str:
+        if nodo in memory:
+            return nodo.symbolx
 
-    def fill_symbols (self, nodo : Nodo) -> str :
-        if (nodo.symbolx == None) :
-            if (nodo.etiqueta == None) :
+        memory.add(nodo)
+
+        if nodo.symbolx is None:
+            if nodo.etiqueta is None:
                 nodo.symbolx = self.r.get_symbolx("λ")
-            else: nodo.symbolx = self.r.get_symbolx(nodo.etiqueta)
+            else:
+                nodo.symbolx = self.r.get_symbolx(nodo.etiqueta)
 
-        if (nodo.arista1 != None) :
-            self.r.write(f"{nodo.symbolx} --> {self.fill_symbols(nodo.arista1)}")
-        if (nodo.arista2 != None) :
-            self.r.write(f"{nodo.symbolx} --> {self.fill_symbols(nodo.arista2)}")
+        if nodo.arista1 is not None:
+            connection = (nodo.symbolx, self.fill_symbols(nodo.arista1, memory, connections))
+            if connection not in connections:
+                self.r.write(f"{connection[0]} --> {connection[1]}")
+                connections.add(connection)
+
+        if nodo.arista2 is not None:
+            connection = (nodo.symbolx, self.fill_symbols(nodo.arista2, memory, connections))
+            if connection not in connections:
+                self.r.write(f"{connection[0]} --> {connection[1]}")
+                connections.add(connection)
 
         return nodo.symbolx
 
@@ -225,7 +237,7 @@ class MotorRegex:
             self.postfix: string = self.infix_a_postfix(regex)
             automata = self.compilar(self.postfix)
 
-            current : set = self.seguir_epsilons(automata.inicial)
+            current: set = self.seguir_epsilons(automata.inicial)
 
             for char in texto:
                 next_states = set()
@@ -295,15 +307,14 @@ def main():
             else:
                 print(f"\nResultado del match: {matches}\n")
 
-            #Procesamos cada nodo para obtener la lista de instrucciones de Mermaid
-            motor.fill_symbols(motor.automata.inicial)
+            # Procesamos cada nodo para obtener la lista de instrucciones de Mermaid
+            motor.fill_symbols(motor.automata.inicial, set(), set())
             # Graficamos el automata
             graficador.graficar(motor.r.script)
 
 
         except KeyboardInterrupt:
             break
-
 
 
 if __name__ == "__main__":
