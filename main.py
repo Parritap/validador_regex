@@ -189,6 +189,8 @@ class MotorRegex:
                 auto_stack.append(Automata(init, final))
 
         result = auto_stack.pop()
+        result.inicial.symbolx = "[*]"
+        result.aceptacion.symbolx = "[*]"
         self.automata = result
         return result
 
